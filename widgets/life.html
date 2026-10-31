@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Year progress · Nightwatch widget</title>
+<!--
+  How much of this year, month and week is done. Uses the viewer's own clock.
+  ?show=year,month,week   rows and order (also: day)
+  ?week=sun               weeks start on Sunday (default Monday)
+  ?theme=light  ?bg=none  ?accent=hex|name  ?motion=off
+-->
+<script>
+(function(){var q=new URLSearchParams(location.search),r=document.documentElement;
+if(q.get('theme')==='light')r.dataset.theme='light';
+if(/^(none|transparent)$/.test(q.get('bg')||''))r.dataset.bg='none';
+var names={gold:'e8b341',amber:'f0a030',teal:'4dbfb3',blue:'5b9bd5',green:'5cb85c',red:'d9534f',purple:'9b7fd4',white:'eef0f3'};
+var a=(q.get('accent')||'').replace(/^#/,'').toLowerCase();a=names[a]||a;
+if(/^([0-9a-f]{3}|[0-9a-f]{6})$/.test(a)){if(a.length===3)a=a.replace(/./g,'$&$&');var n=parseInt(a,16);
+r.style.setProperty('--rgb',[n>>16&255,n>>8&255,n&255].join(','));r.style.setProperty('--accent','#'+a)}
+if(q.get('motion')==='off')r.dataset.motion='off';})();
+</script>
+<style>
+:root{--rgb:232,179,65;--accent:#e8b341;--fg:#eef0f3;--muted:#8b93a0;--bg:#05080b;--bg2:#0e1218;
+--display:Bahnschrift,"DIN Alternate","Barlow Semi Condensed","Segoe UI",system-ui,sans-serif;
+--mono:"Cascadia Mono","SF Mono",Menlo,Consolas,ui-monospace,monospace}
+:root[data-theme=light]{--rgb:168,118,18;--accent:#a87612;--fg:#15181d;--muted:#5b636e;--bg:#f4f1e8;--bg2:#fffdf7}
+html,body{height:100%;margin:0;overflow:hidden}
+body{color:var(--fg);font-family:var(--display);-webkit-font-smoothing:antialiased;
+background:radial-gradient(90% 120% at 88% 0%,rgba(var(--rgb),.13),transparent 60%),linear-gradient(160deg,var(--bg2),var(--bg))}
+:root[data-bg=none] body{background:transparent}
+
+.w{--n:3;height:100%;box-sizing:border-box;padding:min(8vh,6vw);display:grid;align-content:center;
+grid-template-columns:max-content 1fr max-content;column-gap:.9em;row-gap:calc(1.1em - var(--n) * .08em);
+font-size:max(10px,min(calc(25vh / var(--n)),3.3vw))}
+.name{font-weight:600;text-transform:uppercase;letter-spacing:.05em;line-height:1;white-space:nowrap}
+.name small{display:block;font:500 .55em var(--mono);color:var(--accent);letter-spacing:.2em;margin-bottom:.25em}
+.track{position:relative;align-self:center;height:.5em;border-radius:99px;background:rgba(var(--rgb),.13);
+box-shadow:inset 0 0 0 1px rgba(var(--rgb),.2)}
+.fill{position:absolute;inset:0 auto 0 0;width:0;border-radius:inherit;overflow:hidden;
+background:linear-gradient(90deg,rgba(var(--rgb),.6),var(--accent));box-shadow:0 0 8px rgba(var(--rgb),.5);
+transition:width 1.6s cubic-bezier(.2,.8,.2,1)}
+.fill::after{content:"";position:absolute;inset:0;transform:translateX(-100%);
+background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.4) 50%,transparent 70%);animation:shine 4s ease-in-out infinite}
+.pct{align-self:center;font:500 .72em var(--mono);color:var(--accent);font-variant-numeric:tabular-nums;text-align:right;min-width:4.6em}
+@keyframes shine{0%,40%{transform:translateX(-100%)}80%,100%{transform:translateX(100%)}}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+:root[data-motion=off] *,:root[data-motion=off] *::before,:root[data-motion=off] *::after{animation:none!important;transition:none!important}
+</style>
+</head>
+<body>
+<main class="w" id="w"></main>
+<script>
+(function(){
+var q=new URLSearchParams(location.search),w=document.getElementById('w');
+var sunday=q.get('week')==='sun';
+var kinds=['year','month','week','day'];
+var show=(q.get('show')||'year,month,week').toLowerCase().split(',').filter(function(k,i,a){return kinds.indexOf(k)>=0&&a.indexOf(k)===i});
+if(!show.length)show=['year','month','week'];
+w.style.setProperty('--n',show.length);
+
+function isoWeek(d){var t=new Date(d.getFullYear(),d.getMonth(),d.getDate());t.setDate(t.getDate()+3-(t.getDay()+6)%7);
+  var y1=new Date(t.getFullYear(),0,4);return 1+Math.round(((t-y1)/864e5-3+(y1.getDay()+6)%7)/7)}
+function span(kind,d){
+  var y=d.getFullYear(),m=d.getMonth(),day=d.getDate(),dow=sunday?d.getDay():(d.getDay()+6)%7;
+  switch(kind){
+    case 'year':return{a:new Date(y,0,1),b:new Date(y+1,0,1),name:String(y)};
+    case 'month':return{a:new Date(y,m,1),b:new Date(y,m+1,1),name:d.toLocaleDateString(undefined,{month:'long'})};
+    case 'week':return{a:new Date(y,m,day-dow),b:new Date(y,m,day-dow+7),name:'Week '+isoWeek(d)};
+    default:return{a:new Date(y,m,day),b:new Date(y,m,day+1),name:d.toLocaleDateString(undefined,{weekday:'long'})};
+  }
+}
+
+var rows=show.map(function(kind){
+  var name=document.createElement('div'),k=document.createElement('small'),label=document.createElement('span'),
+      track=document.createElement('div'),fill=document.createElement('div'),pct=document.createElement('div');
+  name.className='name';k.textContent=kind;name.append(k,label);
+  track.className='track';fill.className='fill';track.append(fill);pct.className='pct';
+  track.setAttribute('role','progressbar');track.setAttribute('aria-valuemin','0');track.setAttribute('aria-valuemax','100');
+  w.append(name,track,pct);
+  return{kind:kind,label:label,fill:fill,pct:pct,track:track};
+});
+
+function update(){
+  var d=new Date();
+  rows.forEach(function(r){
+    var s=span(r.kind,d),k=Math.min(1,Math.max(0,(d-s.a)/(s.b-s.a))),p=(k*100).toFixed(1);
+    r.label.textContent=s.name;r.pct.textContent=p+'%';r.fill.style.width=p+'%';
+    r.track.setAttribute('aria-valuenow',p);r.track.setAttribute('aria-label',r.kind+' '+s.name+' '+p+'% done');
+  });
+}
+requestAnimationFrame(function(){requestAnimationFrame(update)});
+setInterval(update,60000);
+})();
+</script>
+</body>
+</html>

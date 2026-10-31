@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Countdown · Nightwatch widget</title>
+<!--
+  Countdown widget. Everything comes from the URL, nothing is stored.
+  ?date=YYYY-MM-DD (or YYYY-MM-DDTHH:MM)  target, default next 1 January
+  ?label=Text                             caption
+  ?from=YYYY-MM-DD                        start date: the ring fills from here to the target
+  ?theme=light  ?bg=none  ?accent=hex  ?motion=off
+-->
+<script>
+(function(){var q=new URLSearchParams(location.search),r=document.documentElement;
+if(q.get('theme')==='light')r.dataset.theme='light';
+if(/^(none|transparent)$/.test(q.get('bg')||''))r.dataset.bg='none';
+var names={gold:'e8b341',amber:'f0a030',teal:'4dbfb3',blue:'5b9bd5',green:'5cb85c',red:'d9534f',purple:'9b7fd4',white:'eef0f3'};
+var a=(q.get('accent')||'').replace(/^#/,'').toLowerCase();a=names[a]||a;
+if(/^([0-9a-f]{3}|[0-9a-f]{6})$/.test(a)){if(a.length===3)a=a.replace(/./g,'$&$&');var n=parseInt(a,16);
+r.style.setProperty('--rgb',[n>>16&255,n>>8&255,n&255].join(','));r.style.setProperty('--accent','#'+a)}
+if(q.get('motion')==='off')r.dataset.motion='off';})();
+</script>
+<style>
+:root{--rgb:232,179,65;--accent:#e8b341;--fg:#eef0f3;--muted:#8b93a0;--bg:#05080b;--bg2:#0e1218;
+--display:Bahnschrift,"DIN Alternate","Barlow Semi Condensed","Segoe UI",system-ui,sans-serif;
+--mono:"Cascadia Mono","SF Mono",Menlo,Consolas,ui-monospace,monospace}
+:root[data-theme=light]{--rgb:168,118,18;--accent:#a87612;--fg:#15181d;--muted:#5b636e;--bg:#f4f1e8;--bg2:#fffdf7}
+html,body{height:100%;margin:0;overflow:hidden}
+body{color:var(--fg);font-family:var(--display);-webkit-font-smoothing:antialiased;
+background:radial-gradient(90% 120% at 88% 0%,rgba(var(--rgb),.13),transparent 60%),linear-gradient(160deg,var(--bg2),var(--bg))}
+:root[data-bg=none] body{background:transparent}
+
+/* --s = ring size, --t = text unit. Landscape by default, stacked when the box is tall. */
+.w{--s:min(84vh,42vw);--t:min(1vh,.5vw);height:100%;box-sizing:border-box;padding:min(6vh,4vw);
+display:flex;align-items:center;justify-content:center;gap:min(7vh,4vw)}
+@media (max-aspect-ratio:11/10){.w{--s:min(56vh,74vw);--t:min(.6vh,.9vw);flex-direction:column;text-align:center}
+.label::after{margin-left:auto;margin-right:auto}}
+
+.ring{position:relative;width:var(--s);height:var(--s);flex:none}
+.ring svg{width:100%;height:100%;overflow:visible;transform:rotate(-90deg)}
+.ring circle{fill:none}
+.trk{stroke:rgba(var(--rgb),.14);stroke-width:6}
+.ticks{stroke:rgba(var(--rgb),.35);stroke-width:2.5;stroke-dasharray:.25 1.75}
+.arc{stroke:var(--accent);stroke-width:6;stroke-linecap:round;stroke-dasharray:100 100;stroke-dashoffset:100;
+filter:drop-shadow(0 0 2.5px rgba(var(--rgb),.7));transition:stroke-dashoffset 1.8s cubic-bezier(.2,.8,.2,1)}
+.idle .arc{stroke-dasharray:7 93;stroke-dashoffset:0;transform-origin:50px 50px;animation:spin 14s linear infinite;transition:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.days{font-weight:600;font-size:calc(var(--s)*.36);line-height:.95;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.days[data-len="4"],.days[data-len="5"]{font-size:calc(var(--s)*.26)}
+.unit{font:500 max(8px,calc(var(--s)*.075)) var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-top:.35em}
+
+.side{min-width:0;max-width:100%;display:flex;flex-direction:column;gap:calc(var(--t)*2.2)}
+.label{font-weight:600;font-size:max(12px,calc(var(--t)*14));line-height:1.05;text-transform:uppercase;letter-spacing:.05em;
+white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.label::after{content:"";display:block;width:2.2em;height:max(2px,calc(var(--t)*.9));margin-top:.3em;background:var(--accent);
+box-shadow:0 0 6px rgba(var(--rgb),.5)}
+.meta{font:max(9px,calc(var(--t)*7.5)) var(--mono);color:var(--muted);letter-spacing:.06em;white-space:nowrap}
+.hms{font:500 max(11px,calc(var(--t)*11)) var(--mono);color:var(--accent);letter-spacing:.08em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.hms:empty,.meta:empty{display:none}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+:root[data-motion=off] *,:root[data-motion=off] *::before,:root[data-motion=off] *::after{animation:none!important;transition:none!important}
+</style>
+</head>
+<body>
+<main class="w" id="w" role="timer" aria-live="off">
+  <div class="ring" id="ring">
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <circle class="ticks" cx="50" cy="50" r="48" pathLength="200"/>
+      <circle class="trk" cx="50" cy="50" r="41"/>
+      <circle class="arc" id="arc" cx="50" cy="50" r="41" pathLength="100"/>
+    </svg>
+    <div class="in"><div class="days" id="days">0</div><div class="unit" id="unit">days</div></div>
+  </div>
+  <div class="side">
+    <div class="label" id="label">Countdown</div>
+    <div class="meta" id="when"></div>
+    <div class="hms" id="hms"></div>
+    <div class="meta" id="pct"></div>
+  </div>
+</main>
+<script>
+(function(){
+var q=new URLSearchParams(location.search),$=function(id){return document.getElementById(id)};
+var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches||q.get('motion')==='off';
+var DAY=864e5;
+
+function parseDate(s){
+  var m=/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?$/.exec(s||'');
+  if(!m)return null;
+  var d=new Date(+m[1],m[2]-1,+m[3],+(m[4]||0),+(m[5]||0));
+  return d.getMonth()===m[2]-1?{d:d,timed:!!m[4]}:null;
+}
+function pad(n){return String(n).padStart(2,'0')}
+function countUp(el,to,ms){
+  var t0=performance.now();
+  (function f(t){var k=Math.max(0,Math.min(1,(t-t0)/ms));el.textContent=Math.round(to*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(f)})(t0);
+}
+
+var now=new Date(),p=parseDate(q.get('date')),label=q.get('label');
+if(!p){p={d:new Date(now.getFullYear()+1,0,1),timed:false};if(!label)label='New Year'}
+var target=p.d,f=parseDate(q.get('from')),from=f&&f.d<target?f.d:null;
+
+$('label').textContent=(label||'Countdown').slice(0,60);
+$('when').textContent=target.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'})+
+  (p.timed?' · '+target.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}):'');
+if(!from)$('ring').classList.add('idle');
+
+var first=true;
+function tick(){
+  var t=Date.now(),diff=target-t,a=Math.abs(diff),days=Math.floor(a/DAY),daysEl=$('days'),unit,hms;
+  if(diff>=0){
+    var s=Math.floor(a/1000)%86400;
+    unit=days===1?'day':'days';
+    hms=pad(s/3600|0)+':'+pad((s/60|0)%60)+':'+pad(s%60);
+  }else if(!p.timed&&a<DAY||p.timed&&a<DAY&&new Date(t).toDateString()===target.toDateString()){
+    days=0;unit='today';hms='It’s here';
+  }else{
+    unit=days===1?'day ago':'days ago';hms='';
+  }
+  $('unit').textContent=unit;$('hms').textContent=hms;
+  daysEl.dataset.len=String(days).length;
+  if(first&&!reduce&&days>0)countUp(daysEl,days,1300);else daysEl.textContent=days;
+
+  if(from){
+    var k=diff<=0?1:Math.max(0,Math.min(1,(t-from)/(target-from)));
+    $('arc').style.strokeDashoffset=String(100-k*100);
+    $('pct').textContent=(k*100).toFixed(k<.1?1:0)+'% of the way';
+  }
+  first=false;
+}
+tick();
+setInterval(tick,1000);
+})();
+</script>
+</body>
+</html>

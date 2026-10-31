@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Clock · Nightwatch widget</title>
+<!--
+  Clock widget: time, date and a greeting. Uses the viewer's own clock and time zone.
+  ?name=Text   added to the greeting ("Good evening, Text")
+  ?h24=1       24-hour time
+  ?moon=0      hide the moon
+  ?theme=light  ?bg=none  ?accent=hex|name  ?motion=off
+-->
+<script>
+(function(){var q=new URLSearchParams(location.search),r=document.documentElement;
+if(q.get('theme')==='light')r.dataset.theme='light';
+if(/^(none|transparent)$/.test(q.get('bg')||''))r.dataset.bg='none';
+var names={gold:'e8b341',amber:'f0a030',teal:'4dbfb3',blue:'5b9bd5',green:'5cb85c',red:'d9534f',purple:'9b7fd4',white:'eef0f3'};
+var a=(q.get('accent')||'').replace(/^#/,'').toLowerCase();a=names[a]||a;
+if(/^([0-9a-f]{3}|[0-9a-f]{6})$/.test(a)){if(a.length===3)a=a.replace(/./g,'$&$&');var n=parseInt(a,16);
+r.style.setProperty('--rgb',[n>>16&255,n>>8&255,n&255].join(','));r.style.setProperty('--accent','#'+a)}
+if(q.get('motion')==='off')r.dataset.motion='off';})();
+</script>
+<style>
+:root{--rgb:232,179,65;--accent:#e8b341;--fg:#eef0f3;--muted:#8b93a0;--bg:#05080b;--bg2:#0e1218;
+--display:Bahnschrift,"DIN Alternate","Barlow Semi Condensed","Segoe UI",system-ui,sans-serif;
+--mono:"Cascadia Mono","SF Mono",Menlo,Consolas,ui-monospace,monospace}
+:root[data-theme=light]{--rgb:168,118,18;--accent:#a87612;--fg:#15181d;--muted:#5b636e;--bg:#f4f1e8;--bg2:#fffdf7}
+html,body{height:100%;margin:0;overflow:hidden}
+body{color:var(--fg);font-family:var(--display);-webkit-font-smoothing:antialiased;
+background:radial-gradient(90% 120% at 88% 0%,rgba(var(--rgb),.13),transparent 60%),linear-gradient(160deg,var(--bg2),var(--bg))}
+:root[data-bg=none] body{background:transparent}
+
+.w{--t:min(1vh,.45vw);position:relative;height:100%;box-sizing:border-box;padding:min(8vh,6vw) min(10vh,7vw);
+display:flex;align-items:center}
+@media (max-aspect-ratio:3/2){.w{--t:min(.8vh,.6vw)}}
+.block{position:relative;z-index:1;display:inline-flex;flex-direction:column;gap:calc(var(--t)*3)}
+.greet{font:500 max(9px,calc(var(--t)*8)) var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--accent);
+white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80vw}
+.time{font-weight:600;font-size:max(28px,calc(var(--t)*40));line-height:.9;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:.01em}
+.time span{display:inline-block}
+.colon{margin:0 .03em;animation:blink 2s steps(1) infinite}
+@keyframes blink{50%{opacity:.35}}
+.ap{font:500 .3em var(--mono);letter-spacing:.12em;color:var(--muted);margin-left:.35em;vertical-align:.15em}
+.roll{animation:roll .6s cubic-bezier(.2,.8,.2,1)}
+@keyframes roll{from{opacity:0;transform:translateY(-.25em)}}
+.bar{height:max(2px,calc(var(--t)*.9));background:rgba(var(--rgb),.16);border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);box-shadow:0 0 8px rgba(var(--rgb),.7)}
+.date{font:max(9px,calc(var(--t)*8)) var(--mono);color:var(--muted);letter-spacing:.06em;white-space:nowrap}
+
+/* the moon from the covers, glowing slowly in the corner */
+.moon{position:absolute;right:min(10vh,7vw);top:50%;width:min(52vh,26vw);aspect-ratio:1;margin-top:calc(min(52vh,26vw)/-2);
+border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(var(--rgb),1),rgba(var(--rgb),.82));opacity:.9;
+box-shadow:0 0 0 calc(min(52vh,26vw)*.16) rgba(var(--rgb),.12),0 0 calc(min(52vh,26vw)*.5) rgba(var(--rgb),.25);
+animation:glow 6s ease-in-out infinite alternate}
+.moon::before,.moon::after{content:"";position:absolute;border-radius:50%;background:rgba(0,0,0,.12)}
+.moon::before{width:16%;height:16%;left:26%;top:30%}
+.moon::after{width:22%;height:22%;left:56%;top:52%}
+@keyframes glow{to{box-shadow:0 0 0 calc(min(52vh,26vw)*.2) rgba(var(--rgb),.08),0 0 calc(min(52vh,26vw)*.7) rgba(var(--rgb),.32)}}
+:root[data-moon=off] .moon{display:none}
+@media (max-aspect-ratio:3/2),(max-width:260px){.moon{display:none}}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+:root[data-motion=off] *,:root[data-motion=off] *::before,:root[data-motion=off] *::after{animation:none!important;transition:none!important}
+</style>
+</head>
+<body>
+<main class="w">
+  <div class="block">
+    <div class="greet" id="greet">Good evening</div>
+    <div class="time" role="timer" aria-live="off"><span id="hh">12</span><span class="colon">:</span><span id="mm">00</span><span class="ap" id="ap"></span></div>
+    <div class="bar" aria-hidden="true"><i id="sec"></i></div>
+    <div class="date" id="date"></div>
+  </div>
+  <div class="moon" aria-hidden="true"></div>
+</main>
+<script>
+(function(){
+var q=new URLSearchParams(location.search),$=function(id){return document.getElementById(id)};
+var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches||q.get('motion')==='off';
+var h24=q.get('h24')==='1',name=(q.get('name')||'').trim().slice(0,40);
+if(q.get('moon')==='0')document.documentElement.dataset.moon='off';
+
+function pad(n){return String(n).padStart(2,'0')}
+function set(el,v){
+  if(el.textContent===v)return;
+  el.textContent=v;
+  if(!reduce&&lastMin!==-2){el.classList.remove('roll');void el.offsetWidth;el.classList.add('roll')}
+}
+var lastMin=-2; // -2 = first paint, no roll animation
+function minute(d){
+  var h=d.getHours();
+  set($('hh'),h24?pad(h):String(h%12||12));
+  set($('mm'),pad(d.getMinutes()));
+  $('ap').textContent=h24?'':(h<12?'AM':'PM');
+  var g=h>=5&&h<12?'Good morning':h>=12&&h<17?'Good afternoon':'Good evening';
+  $('greet').textContent=name?g+', '+name:g;
+  $('date').textContent=d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+}
+function frame(){
+  var d=new Date();
+  if(d.getMinutes()!==lastMin){minute(d);lastMin=d.getMinutes()}
+  $('sec').style.width=((d.getSeconds()+(reduce?0:d.getMilliseconds()/1000))/60*100).toFixed(2)+'%';
+}
+frame();
+if(reduce)setInterval(frame,1000);
+else (function loop(){frame();requestAnimationFrame(loop)})();
+})();
+</script>
+</body>
+</html>

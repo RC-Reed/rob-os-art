@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Progress · Nightwatch widget</title>
+<!--
+  Progress / XP widget.
+  ?value=420&max=600   numbers (max defaults to 100)
+  ?label=Level 7       caption
+  ?unit=XP             unit after the numbers
+  ?style=ring          ring instead of a bar
+  ?theme=light  ?bg=none  ?accent=hex|name  ?motion=off
+-->
+<script>
+(function(){var q=new URLSearchParams(location.search),r=document.documentElement;
+if(q.get('theme')==='light')r.dataset.theme='light';
+if(/^(none|transparent)$/.test(q.get('bg')||''))r.dataset.bg='none';
+var names={gold:'e8b341',amber:'f0a030',teal:'4dbfb3',blue:'5b9bd5',green:'5cb85c',red:'d9534f',purple:'9b7fd4',white:'eef0f3'};
+var a=(q.get('accent')||'').replace(/^#/,'').toLowerCase();a=names[a]||a;
+if(/^([0-9a-f]{3}|[0-9a-f]{6})$/.test(a)){if(a.length===3)a=a.replace(/./g,'$&$&');var n=parseInt(a,16);
+r.style.setProperty('--rgb',[n>>16&255,n>>8&255,n&255].join(','));r.style.setProperty('--accent','#'+a)}
+if(q.get('motion')==='off')r.dataset.motion='off';
+if(q.get('style')==='ring')r.dataset.style='ring';})();
+</script>
+<style>
+:root{--rgb:232,179,65;--accent:#e8b341;--fg:#eef0f3;--muted:#8b93a0;--bg:#05080b;--bg2:#0e1218;
+--display:Bahnschrift,"DIN Alternate","Barlow Semi Condensed","Segoe UI",system-ui,sans-serif;
+--mono:"Cascadia Mono","SF Mono",Menlo,Consolas,ui-monospace,monospace}
+:root[data-theme=light]{--rgb:168,118,18;--accent:#a87612;--fg:#15181d;--muted:#5b636e;--bg:#f4f1e8;--bg2:#fffdf7}
+html,body{height:100%;margin:0;overflow:hidden}
+body{color:var(--fg);font-family:var(--display);-webkit-font-smoothing:antialiased;
+background:radial-gradient(90% 120% at 88% 0%,rgba(var(--rgb),.13),transparent 60%),linear-gradient(160deg,var(--bg2),var(--bg))}
+:root[data-bg=none] body{background:transparent}
+
+.w{--t:min(1vh,.45vw);height:100%;box-sizing:border-box;padding:min(9vh,6vw);display:flex;align-items:center;justify-content:center;gap:min(7vh,4vw)}
+.info{flex:1;min-width:0;display:flex;flex-direction:column;gap:calc(var(--t)*4)}
+.row{display:flex;align-items:baseline;justify-content:space-between;gap:1em;min-width:0}
+.label{font-weight:600;font-size:max(13px,calc(var(--t)*14));line-height:1;text-transform:uppercase;letter-spacing:.05em;
+white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.nums{font:500 max(10px,calc(var(--t)*8.5)) var(--mono);color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.nums b{color:var(--fg);font-weight:600}
+.pct{font:600 max(10px,calc(var(--t)*8.5)) var(--mono);color:var(--accent);letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.left{font:max(9px,calc(var(--t)*7.5)) var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+
+/* bar */
+.track{position:relative;height:max(8px,calc(var(--t)*7));border-radius:99px;background:rgba(var(--rgb),.13);
+box-shadow:inset 0 0 0 1px rgba(var(--rgb),.22)}
+.fill{position:absolute;inset:0 auto 0 0;width:0;border-radius:inherit;overflow:hidden;
+background:linear-gradient(90deg,rgba(var(--rgb),.6),var(--accent));box-shadow:0 0 10px rgba(var(--rgb),.55);
+transition:width 1.6s cubic-bezier(.2,.8,.2,1)}
+.fill::after{content:"";position:absolute;inset:0;transform:translateX(-100%);
+background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);animation:shine 3.2s ease-in-out 1.8s infinite}
+@keyframes shine{60%,100%{transform:translateX(100%)}}
+
+/* ring */
+.ring{display:none;position:relative;height:min(82vh,40vw);aspect-ratio:1;flex:none}
+.ring svg{width:100%;height:100%;overflow:visible;transform:rotate(-90deg)}
+.ring circle{fill:none}
+.rtrk{stroke:rgba(var(--rgb),.14);stroke-width:7}
+.rarc{stroke:var(--accent);stroke-width:7;stroke-linecap:round;stroke-dasharray:100 100;stroke-dashoffset:100;
+transition:stroke-dashoffset 1.6s cubic-bezier(.2,.8,.2,1);animation:pulse 3s ease-in-out 1.8s infinite alternate;
+filter:drop-shadow(0 0 2px rgba(var(--rgb),.6))}
+@keyframes pulse{to{filter:drop-shadow(0 0 5px rgba(var(--rgb),.95))}}
+.rin{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+font-weight:600;font-size:calc(min(82vh,40vw)*.26);font-variant-numeric:tabular-nums}
+.rin small{font-size:.45em;color:var(--accent);margin-left:.05em}
+:root[data-style=ring] .ring{display:block}
+:root[data-style=ring] .track,:root[data-style=ring] #pct{display:none}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+:root[data-motion=off] *,:root[data-motion=off] *::before,:root[data-motion=off] *::after{animation:none!important;transition:none!important}
+</style>
+</head>
+<body>
+<main class="w" role="progressbar" id="w" aria-valuemin="0">
+  <div class="ring" aria-hidden="true">
+    <svg viewBox="0 0 100 100"><circle class="rtrk" cx="50" cy="50" r="42"/><circle class="rarc" id="arc" cx="50" cy="50" r="42" pathLength="100"/></svg>
+    <div class="rin"><span id="rpct">0</span><small>%</small></div>
+  </div>
+  <div class="info">
+    <div class="row"><div class="label" id="label">Progress</div><div class="nums" id="nums"></div></div>
+    <div class="track" aria-hidden="true"><div class="fill" id="fill"></div></div>
+    <div class="row"><div class="pct" id="pct">0%</div><div class="left" id="left"></div></div>
+  </div>
+</main>
+<script>
+(function(){
+var q=new URLSearchParams(location.search),$=function(id){return document.getElementById(id)};
+var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches||q.get('motion')==='off';
+
+function num(s,d){var n=parseFloat(s);return isFinite(n)?n:d}
+var max=num(q.get('max'),100);if(max<=0)max=100;
+var value=Math.max(0,num(q.get('value'),0));
+var unit=(q.get('unit')||'').trim().slice(0,12),k=Math.min(1,value/max),pct=Math.round(k*100);
+function fmt(n){return n.toLocaleString(undefined,{maximumFractionDigits:2})}
+
+$('label').textContent=(q.get('label')||'Progress').slice(0,60);
+var b=document.createElement('b');b.textContent=fmt(value);
+$('nums').append(b,' / '+fmt(max)+(unit?' '+unit:''));
+$('left').textContent=k>=1?'Complete':fmt(max-value)+(unit?' '+unit:'')+' to go';
+var w=$('w');w.setAttribute('aria-valuemax',max);w.setAttribute('aria-valuenow',Math.min(value,max));
+w.setAttribute('aria-label',$('label').textContent);
+
+function show(p){$('pct').textContent=p+'%';$('rpct').textContent=p}
+requestAnimationFrame(function(){requestAnimationFrame(function(){
+  $('fill').style.width=(k*100)+'%';
+  $('arc').style.strokeDashoffset=String(100-k*100);
+  if(reduce||!pct)return show(pct);
+  var t0=performance.now();
+  (function f(t){var e=Math.max(0,Math.min(1,(t-t0)/1600));show(Math.round(pct*(1-Math.pow(1-e,3))));if(e<1)requestAnimationFrame(f)})(t0);
+})});
+})();
+</script>
+</body>
+</html>
